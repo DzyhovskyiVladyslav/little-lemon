@@ -11,15 +11,19 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -36,24 +40,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.content.edit
-import androidx.navigation.NavController
 import com.vladdzyga.littlelemon.ui.theme.LittleLemonColor
 
 /**
  * @author VladyslavDzyhovskyi
- * Created 03-Oct-24 at 21:48
+ * Created 04-Oct-24 at 12:11
  */
 
 @Composable
-fun Onboarding(sharedPreferences: SharedPreferences) {
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
+fun Profile(sharedPreferences: SharedPreferences) {
+    var firstName by remember { mutableStateOf(sharedPreferences.getString("first_name", "") ?: "") }
+    var lastName by remember { mutableStateOf(sharedPreferences.getString("last_name", "") ?: "") }
+    var email by remember { mutableStateOf(sharedPreferences.getString("email", "") ?: "") }
 
     val context = LocalContext.current
 
@@ -74,19 +77,6 @@ fun Onboarding(sharedPreferences: SharedPreferences) {
             )
         }
         Box(
-            modifier = Modifier
-                .background(LittleLemonColor.DarkOlive)
-                .fillMaxWidth()
-                .padding(top = 40.dp, bottom = 40.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Let's get to know you",
-                color = LittleLemonColor.White,
-                fontSize = 25.sp
-            )
-        }
-        Box(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
@@ -98,44 +88,80 @@ fun Onboarding(sharedPreferences: SharedPreferences) {
         }
         Column(
             modifier = Modifier
+                .padding(20.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(25.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OnboardingTextField(
-                value = firstName,
-                onValueChange = { firstName = it },
-                label = "First name"
-            )
-            OnboardingTextField(
-                value = lastName,
-                onValueChange = { lastName = it },
-                label = "Last name"
-            )
-            OnboardingTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email"
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp)
+            ) {
+                Text(
+                    text = "First Name:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = firstName,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(2f),
+                    textAlign = TextAlign.End
+                )
+            }
+
+            Divider(color = Color.LightGray, thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp)
+            ) {
+                Text(
+                    text = "Last Name:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = lastName,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(2f),
+                    textAlign = TextAlign.End
+                )
+            }
+
+            Divider(color = Color.LightGray, thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp)
+            ) {
+                Text(
+                    text = "Email:",
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = email,
+                    fontSize = 16.sp,
+                    modifier = Modifier.weight(2f),
+                    textAlign = TextAlign.End
+                )
+            }
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(
             onClick = {
-                if (firstName.isBlank() || lastName.isBlank() || email.isBlank()) {
-                    Toast.makeText(context, "Registration unsuccessful. Please enter all data.",Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Registration successful!",Toast.LENGTH_SHORT).show()
-                    sharedPreferences.edit(commit = true) {
-                        putString("first_name", firstName)
-                        putString("last_name", lastName)
-                        putString("email", email)
-                        putBoolean("logged", true)
-                    }
-                    (context as? Activity)?.finish()
-                    val intent = Intent(context, MainActivity::class.java)
-                    context.startActivity(intent)
+                Toast.makeText(context, "Log out done.",Toast.LENGTH_SHORT).show()
+                sharedPreferences.edit(commit = true) {
+                    putString("first_name", "")
+                    putString("last_name", "")
+                    putString("email", "")
+                    putBoolean("logged", false)
                 }
+                (context as? Activity)?.finish()
+                val intent = Intent(context, MainActivity::class.java)
+                context.startActivity(intent)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,40 +174,10 @@ fun Onboarding(sharedPreferences: SharedPreferences) {
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
-                text = "Register",
+                text = "Log out",
                 color = LittleLemonColor.DarkGrey,
                 fontSize = 18.sp
             )
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun OnboardingTextField(value: String, onValueChange: (String) -> Unit, label: String) {
-    Column {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 5.dp)
-        )
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 0.dp)
-                .height(50.dp)
-                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp)),
-            textStyle = TextStyle(fontSize = 14.sp),
-            colors = TextFieldDefaults.textFieldColors(
-                containerColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
-            shape = RoundedCornerShape(8.dp),
-        )
     }
 }
