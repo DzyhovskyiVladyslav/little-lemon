@@ -1,6 +1,5 @@
 package com.vladdzyga.littlelemon
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -9,12 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -24,26 +22,29 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.vladdzyga.littlelemon.ui.theme.LittleLemonColor
-import kotlinx.coroutines.launch
 
 /**
  * @author VladyslavDzyhovskyi
@@ -52,7 +53,20 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Home(navController: NavController) {
+fun Home(navController: NavController, database: MenuDatabase) {
+    val databaseMenuItems by database.menuDao().getAllMenuItems().observeAsState(emptyList())
+    val searchPhrase = remember { mutableStateOf("") }
+    val selectedCategory = remember { mutableStateOf("") }
+    val menuItems = databaseMenuItems
+        .filter {it.title.contains(searchPhrase.value, ignoreCase = true)}
+        .filter {
+            if(selectedCategory.value.isNotEmpty()) {
+                it.category.contains(selectedCategory.value, ignoreCase = true)
+            } else {
+                true
+            }
+        }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -126,8 +140,8 @@ fun Home(navController: NavController) {
                 )
             }
             TextField(
-                value = "",
-                onValueChange = { },
+                value = searchPhrase.value,
+                onValueChange = { searchPhrase.value = it },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_search),
@@ -165,76 +179,33 @@ fun Home(navController: NavController) {
                 horizontalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 item {
-                    ButtonItem(text = "Starters")
+                    ButtonItem(text = "Starters", selectedCategory)
                 }
                 item {
-                    ButtonItem(text = "Mains")
+                    ButtonItem(text = "Mains", selectedCategory)
                 }
                 item {
-                    ButtonItem(text = "Desserts")
+                    ButtonItem(text = "Desserts", selectedCategory)
                 }
                 item {
-                    ButtonItem(text = "Drinks")
+                    ButtonItem(text = "Drinks", selectedCategory)
                 }
             }
         }
-        LazyColumn {
-            item {
-                MenuDishCard(
-                    "Greek Salad",
-                    "The famous greek salad of crispy lettuce, peppers, olives, our Chicago.",
-                    12.99,
-                    R.drawable.greeksalad
-                )
-            }
-            item {
-                MenuDishCard(
-                    "Lemon Desert",
-                    "Traditional homemade Italian Lemon Ricotta Cake.",
-                    8.99,
-                    R.drawable.lemondessert
-                )
-            }
-            item {
-                MenuDishCard(
-                    "Bruschetta",
-                    "Our Bruschetta is made from grilled bread that has been smeared with garlic and seasoned with salt and olive oil.",
-                    4.99,
-                    R.drawable.bruschetta
-                )
-            }
-            item {
-                MenuDishCard(
-                    "Grilled Fish",
-                    "Fish marinated in fresh orange and lemon juice. Grilled with orange and lemon wedges.",
-                    19.99,
-                    R.drawable.grilledfish
-                )
-            }
-            item {
-                MenuDishCard(
-                    "Pasta",
-                    "Penne with fried aubergines, cherry tomatoes, tomato sauce, fresh chilli, garlic, basil & salted ricotta cheese.",
-                    8.99,
-                    R.drawable.pasta
-                )
-            }
-            item {
-                MenuDishCard(
-                    "Lasagne",
-                    "Oven-baked layers of pasta stuffed with Bolognese sauce, béchamel sauce, ham, Parmesan & mozzarella cheese.",
-                    7.99,
-                    R.drawable.lasagne
-                )
+        LazyColumn(
+            modifier = Modifier.padding(bottom = 40.dp)
+        ) {
+            itemsIndexed(menuItems) { _, item ->
+                MenuDishCard(item)
             }
         }
     }
 }
 
 @Composable
-fun ButtonItem(text: String) {
+fun ButtonItem(text: String, selectedCategory : MutableState<String>) {
     Button(
-        onClick = {},
+        onClick = { setCategory(text.lowercase(), selectedCategory) },
         modifier = Modifier.height(40.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.LightGray
@@ -250,9 +221,17 @@ fun ButtonItem(text: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+fun setCategory(category: String, selectedCategory : MutableState<String>) {
+    if(selectedCategory.value == category) {
+        selectedCategory.value = ""
+    } else {
+        selectedCategory.value = category
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalGlideComposeApi::class)
 @Composable
-fun MenuDishCard(name: String, description: String, price: Double, imageResource: Int) {
+fun MenuDishCard(item: MenuItem) {
     Card(
         onClick = {},
         colors = CardDefaults.cardColors(
@@ -267,27 +246,29 @@ fun MenuDishCard(name: String, description: String, price: Double, imageResource
         ) {
             Column () {
                 Text(
-                    text = name,
+                    text = item.title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = description,
+                    text = item.description,
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
                         .padding(top = 5.dp, bottom = 5.dp)
                 )
                 Text(
-                    text = "$${price}",
+                    text = "$${item.price}",
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Image(
-                painter = painterResource(id = imageResource),
-                contentDescription = name,
+            GlideImage(
+                model = item.imageUrl,
+                contentDescription = item.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Crop,
             )
         }
     }

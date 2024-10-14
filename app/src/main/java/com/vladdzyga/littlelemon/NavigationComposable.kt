@@ -1,9 +1,7 @@
 package com.vladdzyga.littlelemon
 
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,7 +12,7 @@ import androidx.navigation.compose.composable
  */
 
 @Composable
-fun Navigation(navController: NavHostController, sharedPreferences: SharedPreferences) {
+fun Navigation(navController: NavHostController, sharedPreferences: SharedPreferences, database: MenuDatabase) {
     val startDestination = if (sharedPreferences.getBoolean("logged", false)) {
         Home.route
     } else {
@@ -26,7 +24,7 @@ fun Navigation(navController: NavHostController, sharedPreferences: SharedPrefer
             Onboarding(sharedPreferences)
         }
         composable(Home.route) {
-            Home(navController)
+            Home(navController, database)
         }
         composable(Profile.route) {
             Profile(sharedPreferences)
